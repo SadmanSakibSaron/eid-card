@@ -1,6 +1,16 @@
+import { useState } from 'react';
 import { Dithering, HalftoneCmyk, Heatmap } from '@paper-design/shaders-react';
+import WishModal from './components/WishModal';
+import WishCard from './components/WishCard';
 
 export default function App() {
+  const [wishes, setWishes] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+
+  const handleAddWish = (wish) => {
+    setWishes((prev) => [wish, ...prev]);
+  };
+
   return (
     <div style={{ backgroundColor: '#E0E1CC', backgroundImage: 'linear-gradient(#FFFFFF, #FFFFFF)', boxSizing: 'border-box', position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
       <Dithering
@@ -60,6 +70,38 @@ export default function App() {
         colorK="#43393C"
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
       />
+
+      {/* Content layer above shaders */}
+      <div className="absolute inset-0 z-10 flex flex-col">
+        {/* Wishes display area */}
+        {wishes.length > 0 && (
+          <div className="flex-1 overflow-y-auto p-6 pb-24">
+            <div className="flex flex-wrap gap-4 justify-center">
+              {wishes.map((wish, i) => (
+                <WishCard key={i} wish={wish} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Add Wish Button - fixed bottom */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
+          <button
+            onClick={() => setShowModal(true)}
+            className="px-6 py-3 bg-white/90 border-2 border-dashed border-stone-400 rounded-sm text-xs font-mono uppercase tracking-[0.2em] text-stone-600 shadow-lg hover:bg-white hover:shadow-xl hover:scale-105 transition-all cursor-pointer"
+          >
+            + Add Wish to World
+          </button>
+        </div>
+      </div>
+
+      {/* Wish Modal */}
+      {showModal && (
+        <WishModal
+          onClose={() => setShowModal(false)}
+          onSubmit={handleAddWish}
+        />
+      )}
     </div>
   );
 }
