@@ -29,12 +29,14 @@ function localWishesApi() {
           let body = ''
           req.on('data', (chunk) => (body += chunk))
           req.on('end', () => {
-            const { name, message } = JSON.parse(body)
+            const { name, message, patternSeed, patternMode } = JSON.parse(body)
             const wishes = read()
             const wish = {
               id: Date.now(),
               name: (name || 'Anonymous').trim().slice(0, 100),
               message: message.trim().slice(0, 200),
+              patternSeed: patternSeed ? Math.floor(Number(patternSeed)) : null,
+              patternMode: patternMode || null,
               created_at: new Date().toISOString(),
             }
             wishes.unshift(wish)

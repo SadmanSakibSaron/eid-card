@@ -127,3 +127,18 @@
     @apply font-sans;
     }
 }
+
+/* Paper grain texture overlay */
+.grain {
+  position: relative;
+}
+
+.grain::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  filter: url(#paperGrain);
+  opacity: 0.2;
+}

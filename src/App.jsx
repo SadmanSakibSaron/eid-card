@@ -57,7 +57,16 @@ export default function App() {
   };
 
   return (
-    <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
+    <div className="grain" style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
+      {/* SVG filter for paper grain texture */}
+      <svg className="absolute w-0 h-0" aria-hidden>
+        <filter id="paperGrain">
+          <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="5" stitchTiles="stitch" result="noise" />
+          <feDiffuseLighting in="noise" lightingColor="white" surfaceScale="1.5" result="lit">
+            <feDistantLight azimuth="45" elevation="55" />
+          </feDiffuseLighting>
+        </filter>
+      </svg>
       <div
         className="absolute inset-0 transition-[filter] duration-300"
         style={{ filter: cardFocused ? 'blur(12px)' : 'blur(0px)' }}

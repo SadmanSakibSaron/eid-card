@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { motion, useMotionValue, useSpring, useTransform, useMotionTemplate } from 'motion/react';
+import TessellatedPattern from './TessellatedPattern';
 
 export default function WishCard({ wish }) {
   const tiltX = useMotionValue(0);
@@ -26,8 +27,9 @@ export default function WishCard({ wish }) {
   return (
     <div style={{ perspective: '800px' }}>
       <motion.div
-        className="w-64 bg-white/85 border border-stone-300 rounded-sm shadow-lg p-4 relative shrink-0 group/wish"
+        className="w-[280px] bg-[#f5f0eb] rounded shadow-md relative flex group/wish"
         style={{
+          minHeight: '160px',
           rotateX: springX,
           rotateY: springY,
           transformStyle: 'preserve-3d',
@@ -35,23 +37,40 @@ export default function WishCard({ wish }) {
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       >
-        {/* Mini stamp */}
-        <div className="absolute top-2 right-2 w-6 h-7 border border-dotted border-stone-300" />
-
-        {/* Message */}
-        <p className="text-sm font-serif text-stone-700 leading-relaxed pr-8 line-clamp-4">
-          "{wish.message}"
-        </p>
-
-        {/* Divider */}
-        <div className="border-t border-stone-200 mt-3 pt-2">
-          <span className="text-[10px] font-mono uppercase tracking-widest text-stone-400">
-            — {wish.name}
-          </span>
+        {/* Left side — message */}
+        <div className="w-[60%] min-w-0 p-4 flex flex-col justify-between overflow-hidden">
+          <p
+            className="text-[11px] text-stone-600 leading-relaxed flex-1 break-words overflow-hidden"
+            style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
+          >
+            "{wish.message}"
+          </p>
+          <div className="mt-3 pt-2 border-t border-stone-200/60 shrink-0">
+            <span className="text-[8px] font-mono uppercase tracking-[0.15em] text-stone-400">
+              — {wish.name}
+            </span>
+          </div>
         </div>
 
+        {/* Right side — pattern */}
+        {wish.patternSeed && (
+          <div className="w-[40%] flex flex-col">
+            <div className="flex-1 p-2">
+              <div className="w-full h-full rounded overflow-hidden">
+                <TessellatedPattern
+                  seed={wish.patternSeed}
+                  mode={wish.patternMode}
+                  gridSize={4}
+                  density={2}
+                  lineWeight={0.6}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Shine / glare overlay */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-sm">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden rounded">
           <motion.div
             aria-hidden
             className="absolute inset-0 opacity-0 transition-opacity duration-500 group-hover/wish:opacity-100"
