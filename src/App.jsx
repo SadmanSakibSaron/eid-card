@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { useDialKit } from 'dialkit';
 import { Dithering, HalftoneCmyk, Heatmap } from '@paper-design/shaders-react';
+import DragElements from './components/fancy/blocks/drag-elements';
 import WishModal from './components/WishModal';
 import WishCard from './components/WishCard';
 
@@ -7,8 +9,27 @@ export default function App() {
   const [wishes, setWishes] = useState([]);
   const [showModal, setShowModal] = useState(false);
 
+  const scatter = useDialKit('Scatter', {
+    xCenter: [25, 0, 80, 1],
+    xSpread: [30, 0, 80, 1],
+    yCenter: [15, 0, 80, 1],
+    ySpread: [40, 0, 80, 1],
+    maxRotation: [25, 0, 90, 1],
+  });
+
+  const drag = useDialKit('Drag', {
+    elastic: [0.5, 0, 1],
+    bounceStiffness: [200, 50, 600, 10],
+    bounceDamping: [300, 10, 600, 10],
+  });
+
   const handleAddWish = (wish) => {
-    setWishes((prev) => [wish, ...prev]);
+    const s = {
+      x: scatter.xCenter + Math.random() * scatter.xSpread,
+      y: scatter.yCenter + Math.random() * scatter.ySpread,
+      rotate: -scatter.maxRotation + Math.random() * scatter.maxRotation * 2,
+    };
+    setWishes((prev) => [{ ...wish, scatter: s }, ...prev]);
   };
 
   return (
@@ -71,28 +92,35 @@ export default function App() {
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
       />
 
-      {/* Content layer above shaders */}
-      <div className="absolute inset-0 z-10 flex flex-col">
-        {/* Wishes display area */}
-        {wishes.length > 0 && (
-          <div className="flex-1 overflow-y-auto p-6 pb-24">
-            <div className="flex flex-wrap gap-4 justify-center">
-              {wishes.map((wish, i) => (
-                <WishCard key={i} wish={wish} />
-              ))}
+      {/* Draggable wishes layer */}
+      <div className="absolute inset-0 z-10">
+        <DragElements
+          dragMomentum={true}
+          dragElastic={drag.elastic}
+          dragTransition={{ bounceStiffness: drag.bounceStiffness, bounceDamping: drag.bounceDamping }}
+          className="overflow-hidden"
+        >
+          {wishes.map((wish, i) => (
+            <div
+              key={i}
+              style={{
+                transform: `translate(${wish.scatter.x}vw, ${wish.scatter.y}vh) rotate(${wish.scatter.rotate}deg)`,
+              }}
+            >
+              <WishCard wish={wish} />
             </div>
-          </div>
-        )}
+          ))}
+        </DragElements>
+      </div>
 
-        {/* Add Wish Button - fixed bottom */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
-          <button
-            onClick={() => setShowModal(true)}
-            className="px-6 py-3 bg-white/90 border-2 border-dashed border-stone-400 rounded-sm text-xs font-mono uppercase tracking-[0.2em] text-stone-600 shadow-lg hover:bg-white hover:shadow-xl hover:scale-105 transition-all cursor-pointer"
-          >
-            + Add Wish to World
-          </button>
-        </div>
+      {/* Add Wish Button - fixed bottom */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20">
+        <button
+          onClick={() => setShowModal(true)}
+          className="px-6 py-3 bg-white/90 border-2 border-dashed border-stone-400 rounded-sm text-xs font-mono uppercase tracking-[0.2em] text-stone-600 shadow-lg hover:bg-white hover:shadow-xl hover:scale-105 transition-all cursor-pointer"
+        >
+          + Add Wish to World
+        </button>
       </div>
 
       {/* Wish Modal */}
