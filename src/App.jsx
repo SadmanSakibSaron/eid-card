@@ -127,10 +127,10 @@ export default function App() {
           {wishes.map((wish, i) => (
             <div
               key={wish.id || i}
+              data-rotate={wish.scatter.rotate}
               style={{
                 left: `${wish.scatter.x}%`,
                 top: `${wish.scatter.y}%`,
-                transform: `rotate(${wish.scatter.rotate}deg)`,
               }}
             >
               <WishCard wish={wish} />

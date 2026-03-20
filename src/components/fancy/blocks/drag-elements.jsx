@@ -23,21 +23,21 @@ function DragChild({
   const isFocused = focusedIndex === index;
   const somethingFocused = focusedIndex !== null;
 
+  // Get scatter rotation from data attribute
+  const baseRotate = parseFloat(child.props?.['data-rotate']) || 0;
+
   const animateToCenter = useCallback(() => {
     const el = ref.current;
-    const container = constraintsRef.current;
-    if (!el || !container) return;
+    if (!el) return;
 
     const elRect = el.getBoundingClientRect();
-    const containerRect = container.getBoundingClientRect();
+    const vpCx = window.innerWidth / 2;
+    const vpCy = window.innerHeight / 2;
 
-    // Save current position before focusing
-    beforeFocusRef.current = {
-      x: el.style.transform,
-    };
+    beforeFocusRef.current = true;
 
-    const offsetX = (containerRect.width / 2) - (elRect.left - containerRect.left) - (elRect.width / 2);
-    const offsetY = (containerRect.height / 2) - (elRect.top - containerRect.top) - (elRect.height / 2);
+    const offsetX = vpCx - elRect.left - elRect.width / 2;
+    const offsetY = vpCy - elRect.top - elRect.height / 2;
 
     controls.start({
       x: offsetX,
@@ -46,18 +46,18 @@ function DragChild({
       scale: 2,
       transition: { type: 'spring', stiffness: 500, damping: 80 },
     });
-  }, [controls, constraintsRef]);
+  }, [controls]);
 
   const animateBack = useCallback(() => {
     controls.start({
       x: 0,
       y: 0,
-      rotate: 0,
+      rotate: baseRotate,
       scale: 1,
       transition: { type: 'spring', stiffness: 500, damping: 80 },
     });
     beforeFocusRef.current = null;
-  }, [controls]);
+  }, [controls, baseRotate]);
 
   // React to focus changes
   useEffect(() => {
@@ -107,6 +107,7 @@ function DragChild({
       dragTransition={dragTransition}
       dragPropagation={dragPropagation}
       animate={controls}
+      initial={{ rotate: baseRotate }}
       style={{
         zIndex: isFocused ? 9999 : zIndex,
         cursor: isDragging ? "grabbing" : "grab",
@@ -168,12 +169,24 @@ const DragElements = ({
     }
   }, [selectedOnTop])
 
-  // Click backdrop to unfocus
+  // Click backdrop to unfocus — anywhere outside a card
   const handleBackdropClick = (e) => {
-    if (e.target === constraintsRef.current && focusedIndex !== null) {
+    if (focusedIndex !== null && e.target === constraintsRef.current) {
       handleFocusChange(null);
     }
   };
+
+  // Also unfocus on any click outside the container (e.g. background layers)
+  useEffect(() => {
+    if (focusedIndex === null) return;
+    const handleGlobalClick = (e) => {
+      if (constraintsRef.current && !constraintsRef.current.contains(e.target)) {
+        handleFocusChange(null);
+      }
+    };
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  }, [focusedIndex, handleFocusChange]);
 
   return (
     <div

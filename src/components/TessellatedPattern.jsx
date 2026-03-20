@@ -187,6 +187,22 @@ function drawCrosshatch(ctx, rng, ox, oy, cols, rows, cw, ch, lw, density, p) {
 
 const drawFns = { truchet: drawTruchet, diagonal: drawDiagonal, concentric: drawConcentric, cross: drawCrosshatch };
 
+function shuffleColors(rng, p) {
+  const allColors = [p.bgColor, p.strokeColor, p.accentColor, p.highlightColor];
+  // Fisher-Yates shuffle using seeded rng
+  for (let i = allColors.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [allColors[i], allColors[j]] = [allColors[j], allColors[i]];
+  }
+  return {
+    ...p,
+    bgColor: allColors[0],
+    strokeColor: allColors[1],
+    accentColor: allColors[2],
+    highlightColor: allColors[3],
+  };
+}
+
 function renderPattern(canvas, seed, mode, p) {
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
@@ -197,22 +213,24 @@ function renderPattern(canvas, seed, mode, p) {
   canvas.height = h * dpr;
   ctx.scale(dpr, dpr);
 
+  const rng = createRng(seed);
+  const sp = shuffleColors(rng, p);
+
   // Background
-  ctx.fillStyle = p.bgColor;
+  ctx.fillStyle = sp.bgColor;
   ctx.fillRect(0, 0, w, h);
 
-  const margin = Math.min(w, h) * p.marginPct;
+  const margin = Math.min(w, h) * sp.marginPct;
   const drawW = w - margin * 2;
   const drawH = h - margin * 2;
-  const cols = p.gridSize;
-  const rows = Math.max(1, Math.round(p.gridSize * (h / w)));
+  const cols = sp.gridSize;
+  const rows = Math.max(1, Math.round(sp.gridSize * (h / w)));
   const cellW = drawW / cols;
   const cellH = drawH / rows;
 
-  const rng = createRng(seed);
   const fn = drawFns[mode] || drawFns.truchet;
-  ctx.lineCap = p.lineCap === 0 ? 'butt' : p.lineCap === 1 ? 'round' : 'square';
-  fn(ctx, rng, margin, margin, cols, rows, cellW, cellH, p.lineWeight, p.density, p);
+  ctx.lineCap = sp.lineCap === 0 ? 'butt' : sp.lineCap === 1 ? 'round' : 'square';
+  fn(ctx, rng, margin, margin, cols, rows, cellW, cellH, sp.lineWeight, sp.density, sp);
 }
 
 // Pick a random mode from seed
