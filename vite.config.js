@@ -63,7 +63,7 @@ export default defineConfig({
   },
   server: {
     watch: {
-      ignored: ['**/wishes.local.json'],
+      ignored: [WISHES_FILE.replace(/\\/g, '/')],
     },
   },
 })

@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState, useCallback } from "react"
 import { motion, useAnimationControls } from "motion/react";
 
+let initialSpreadDone = false;
+
 function DragChild({
   child,
   index,
@@ -25,19 +27,22 @@ function DragChild({
 
   // Get scatter rotation from data attribute
   const baseRotate = parseFloat(child.props?.['data-rotate']) || 0;
+  const enterFromTop = child.props?.['data-enter-from-top'] === 'true';
 
   const animateToCenter = useCallback(() => {
     const el = ref.current;
     if (!el) return;
 
     const elRect = el.getBoundingClientRect();
-    const vpCx = window.innerWidth / 2;
-    const vpCy = window.innerHeight / 2;
+    const container = constraintsRef?.current;
+    const containerRect = container ? container.getBoundingClientRect() : { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
+    const cx = containerRect.left + containerRect.width / 2;
+    const cy = containerRect.top + containerRect.height / 2;
 
     beforeFocusRef.current = true;
 
-    const offsetX = vpCx - elRect.left - elRect.width / 2;
-    const offsetY = vpCy - elRect.top - elRect.height / 2;
+    const offsetX = cx - elRect.left - elRect.width / 2;
+    const offsetY = cy - elRect.top - elRect.height / 2;
 
     controls.start({
       x: offsetX,
@@ -58,6 +63,57 @@ function DragChild({
     });
     beforeFocusRef.current = null;
   }, [controls, baseRotate]);
+
+  // Entry animations
+  useEffect(() => {
+    if (enterFromTop) {
+      // Newly thrown cards: drop from top
+      controls.set({ y: -window.innerHeight, scale: 0.6, opacity: 0 });
+      const timer = setTimeout(() => {
+        controls.start({
+          y: 0,
+          scale: 1,
+          opacity: 1,
+          rotate: baseRotate,
+          transition: { type: 'spring', stiffness: 120, damping: 18, mass: 0.8 },
+        });
+      }, 300);
+      return () => clearTimeout(timer);
+    } else if (initialSpreadDone) {
+      // Cards added after initial load that aren't enterFromTop — just set rotation
+      controls.set({ rotate: baseRotate });
+    } else {
+      // Initial load cards: spread from center (only on first page load)
+      requestAnimationFrame(() => { initialSpreadDone = true; });
+      const el = ref.current;
+      const container = constraintsRef?.current;
+      if (!el || !container) return;
+
+      const containerRect = container.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+
+      // Offset to move card from its natural position to the container center
+      const dx = (containerRect.left + containerRect.width / 2) - (elRect.left + elRect.width / 2);
+      const dy = (containerRect.top + containerRect.height / 2) - (elRect.top + elRect.height / 2);
+
+      controls.set({ x: dx, y: dy, scale: 1, opacity: 1, rotate: 0 });
+      controls.start({
+        x: 0,
+        y: 0,
+        scale: 1,
+        opacity: 1,
+        rotate: baseRotate,
+        transition: {
+          type: 'spring',
+          stiffness: 150,
+          damping: 20,
+          mass: 0.8,
+          delay: 0.1,
+        },
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // React to focus changes
   useEffect(() => {
@@ -107,7 +163,7 @@ function DragChild({
       dragTransition={dragTransition}
       dragPropagation={dragPropagation}
       animate={controls}
-      initial={{ rotate: baseRotate }}
+      initial={false}
       style={{
         zIndex: isFocused ? 9999 : zIndex,
         cursor: isDragging ? "grabbing" : "grab",

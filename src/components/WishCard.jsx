@@ -40,10 +40,10 @@ export default function WishCard({ wish }) {
         {/* Left side — message */}
         <div className="w-[60%] min-w-0 p-4 flex flex-col justify-between overflow-hidden">
           <p
-            className="text-[11px] text-stone-600 leading-relaxed flex-1 break-words overflow-hidden"
-            style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
+            className="text-[18px] text-stone-600 leading-none flex-1 break-words overflow-hidden"
+            style={{ fontFamily: 'Caveat, Georgia, "Times New Roman", serif' }}
           >
-            "{wish.message}"
+            {wish.message}
           </p>
           <div className="mt-3 pt-2 border-t border-stone-200/60 shrink-0">
             <span className="text-[8px] font-mono uppercase tracking-[0.15em] text-stone-400">
