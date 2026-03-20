@@ -48,7 +48,7 @@ function CardContent({ name, setName, message, setMessage, onCancel, onSubmit, i
           tabIndex={interactive ? 0 : -1}
           placeholder="Write your Eid wish here..."
           maxLength={200}
-          className="w-full flex-1 bg-transparent text-stone-600 text-[24px] leading-relaxed placeholder:text-stone-400 focus:outline-none resize-none"
+          className="w-full flex-1 bg-transparent text-stone-800 text-[24px] leading-relaxed placeholder:text-stone-400 focus:outline-none resize-none"
           style={{ fontFamily: 'Caveat, Georgia, "Times New Roman", serif' }}
         />
         <div className="mt-4 pt-3 border-t border-stone-200/60">
@@ -164,7 +164,7 @@ function ThrowableCard({ wish, onThrown, shakeTrigger, onThrowProgress }) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.4 }}
-          className="text-stone-400 text-xs font-mono uppercase tracking-[0.2em]"
+          className="text-gray-600 text-sm font-mono uppercase tracking-[0.2em] bg-white/80 px-4 py-2 rounded-full shadow-sm"
         >
           Flick upward to send
         </motion.p>
