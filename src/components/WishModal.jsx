@@ -47,7 +47,7 @@ function CardContent({ name, setName, message, setMessage, onCancel, onSubmit, i
           tabIndex={interactive ? 0 : -1}
           placeholder="Write your Eid wish here..."
           maxLength={200}
-          className="w-full flex-1 bg-transparent text-stone-600 text-[15px] leading-relaxed placeholder:text-stone-300 focus:outline-none resize-none"
+          className="w-full flex-1 bg-transparent text-stone-600 text-[15px] leading-relaxed placeholder:text-stone-400 focus:outline-none resize-none"
           style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
         />
         <div className="mt-4 pt-3 border-t border-stone-200/60">
@@ -58,7 +58,7 @@ function CardContent({ name, setName, message, setMessage, onCancel, onSubmit, i
             readOnly={!interactive}
             tabIndex={interactive ? 0 : -1}
             placeholder="Your name"
-            className="w-full bg-transparent text-stone-500 text-xs font-mono uppercase tracking-[0.15em] placeholder:text-stone-300 focus:outline-none"
+            className="w-full bg-transparent text-stone-500 text-xs font-mono uppercase tracking-[0.15em] placeholder:text-stone-400 focus:outline-none"
           />
         </div>
       </div>
@@ -71,23 +71,6 @@ function CardContent({ name, setName, message, setMessage, onCancel, onSubmit, i
           </div>
         </div>
 
-        <div className="flex items-center justify-between px-5 py-3 border-t border-stone-200/60">
-          <button
-            onClick={interactive ? onCancel : undefined}
-            tabIndex={interactive ? 0 : -1}
-            className="text-[10px] font-mono uppercase tracking-widest text-stone-400 hover:text-stone-600 transition-colors cursor-pointer"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={interactive ? onSubmit : undefined}
-            tabIndex={interactive ? 0 : -1}
-            disabled={!message.trim()}
-            className="px-4 py-1.5 text-[10px] font-mono uppercase tracking-widest text-white bg-[#D4944A] rounded-sm hover:brightness-110 transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-          >
-            Send
-          </button>
-        </div>
       </div>
 
       {/* Shine / glare overlay */}
@@ -133,12 +116,36 @@ export default function WishModal({ isOpen, onToggle, onSubmit }) {
     <>
       {/* Button */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[110]">
-        <button
+        <motion.button
           onClick={onToggle}
-          className="px-6 py-3 bg-[#D4944A] rounded-full text-xs font-mono uppercase tracking-[0.2em] text-white shadow-lg hover:brightness-110 hover:shadow-xl cursor-pointer whitespace-nowrap"
+          layout
+          className="px-6 py-4 rounded-full text-sm font-mono uppercase tracking-[0.2em] shadow-lg cursor-pointer whitespace-nowrap overflow-hidden relative"
+          animate={{
+            backgroundColor: isOpen ? '#ffffff' : '#D4944A',
+            color: isOpen ? '#78716c' : '#ffffff',
+            borderColor: isOpen ? '#d6d3d1' : 'transparent',
+          }}
+          transition={{
+            layout: { type: 'spring', stiffness: 300, damping: 30 },
+            backgroundColor: { duration: 0.4, ease: 'easeInOut' },
+            color: { duration: 0.4, ease: 'easeInOut' },
+            borderColor: { duration: 0.4, ease: 'easeInOut' },
+          }}
+          style={{ border: '1px solid transparent' }}
         >
-          + Add Wish to World
-        </button>
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.span
+              key={isOpen ? 'close' : 'add'}
+              initial={{ opacity: 0, filter: 'blur(4px)', y: 6 }}
+              animate={{ opacity: 1, filter: 'blur(0px)', y: 0 }}
+              exit={{ opacity: 0, filter: 'blur(4px)', y: -6 }}
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
+              className="inline-block"
+            >
+              {isOpen ? 'Close' : '+ Add Wish to World'}
+            </motion.span>
+          </AnimatePresence>
+        </motion.button>
       </div>
 
       {/* Modal */}
@@ -179,6 +186,13 @@ export default function WishModal({ isOpen, onToggle, onSubmit }) {
                 interactive={true}
                 patternSeed={patternSeed}
               />
+              <button
+                onClick={handleSubmit}
+                disabled={!message.trim()}
+                className="w-[560px] mt-6 py-4 text-sm font-mono uppercase tracking-[0.2em] text-white bg-[#D4944A] rounded-full hover:brightness-110 transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer shadow-lg"
+              >
+                Send Wish
+              </button>
             </motion.div>
           </div>
         )}
