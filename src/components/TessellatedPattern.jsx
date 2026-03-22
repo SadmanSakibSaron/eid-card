@@ -586,7 +586,10 @@ const DEFAULTS = {
   bgColor: '#1a1714',
 };
 
-export default function TessellatedPattern({ seed, mode, className = '', gridSize, density, lineWeight }) {
+export { DEFAULTS as PATTERN_DEFAULTS };
+export const PATTERN_MODES = Object.keys(drawFns);
+
+export default function TessellatedPattern({ seed, mode, className = '', gridSize, density, lineWeight, overrides }) {
   const canvasRef = useRef(null);
   const resolvedMode = mode || modeFromSeed(seed);
 
@@ -595,12 +598,13 @@ export default function TessellatedPattern({ seed, mode, className = '', gridSiz
     ...(gridSize != null && { gridSize }),
     ...(density != null && { density }),
     ...(lineWeight != null && { lineWeight }),
+    ...overrides,
   };
 
   useEffect(() => {
     if (!canvasRef.current) return;
     renderPattern(canvasRef.current, seed, resolvedMode, params);
-  }, [seed, resolvedMode, gridSize, density, lineWeight]);
+  });
 
   return (
     <canvas

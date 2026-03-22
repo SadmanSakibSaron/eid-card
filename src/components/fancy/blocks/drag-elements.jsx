@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from "react"
-import { motion, useAnimationControls } from "motion/react";
+import { motion, useAnimationControls, useReducedMotion } from "motion/react";
 
 let initialSpreadDone = false;
 
@@ -25,6 +25,7 @@ function DragChild({
   const beforeFocusRef = useRef(null);
   const isFocused = focusedIndex === index;
   const somethingFocused = focusedIndex !== null;
+  const prefersReducedMotion = useReducedMotion();
 
   // Get scatter rotation from data attribute
   const baseRotate = parseFloat(child.props?.['data-rotate']) || 0;
@@ -44,13 +45,13 @@ function DragChild({
     const offsetY = cy - elRect.top - elRect.height / 2;
 
     controls.start({
-      x: offsetX,
-      y: offsetY,
+      x: prefersReducedMotion ? 0 : offsetX,
+      y: prefersReducedMotion ? 0 : offsetY,
       rotate: 0,
-      scale: isMobile ? 1.3 : 2,
-      transition: { type: 'spring', stiffness: 500, damping: 80 },
+      scale: isMobile ? 1.15 : 1.6,
+      transition: { type: 'spring', duration: 0.4, bounce: 0.12 },
     });
-  }, [controls, isMobile]);
+  }, [controls, isMobile, prefersReducedMotion]);
 
   const animateBack = useCallback(() => {
     controls.start({
@@ -58,7 +59,7 @@ function DragChild({
       y: 0,
       rotate: baseRotate,
       scale: 1,
-      transition: { type: 'spring', stiffness: 500, damping: 80 },
+      transition: { type: 'spring', duration: 0.35, bounce: 0 },
     });
     beforeFocusRef.current = null;
   }, [controls, baseRotate]);
@@ -67,7 +68,7 @@ function DragChild({
   useEffect(() => {
     if (enterFromTop) {
       // Newly thrown cards: drop from top
-      controls.set({ y: -window.innerHeight, scale: 0.6, opacity: 0 });
+      controls.set({ y: -window.innerHeight, scale: 0.85, opacity: 0 });
       const timer = setTimeout(() => {
         controls.start({
           y: 0,
@@ -107,7 +108,7 @@ function DragChild({
           stiffness: 80,
           damping: 18,
           mass: 0.8,
-          delay: 0.1,
+          delay: 0.1 + index * 0.04,
         },
       });
     }
@@ -165,7 +166,7 @@ function DragChild({
       initial={false}
       style={{
         zIndex: isFocused ? 9999 : zIndex,
-        cursor: isDragging ? "grabbing" : "grab",
+        cursor: isFocused ? 'zoom-out' : isDragging ? 'grabbing' : 'grab',
         touchAction: 'none',
         ...child.props.style,
       }}
@@ -173,13 +174,15 @@ function DragChild({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onClick={handleClick}
-      whileDrag={{ cursor: "grabbing", scale: 1.05 }}
+      whileHover={!isFocused ? { scale: 1.02, transition: { duration: 0.12 } } : undefined}
+      whileDrag={{ cursor: 'grabbing', scale: 1.05, transition: { duration: 0.12 } }}
       className="absolute"
     >
       <motion.div
         animate={{
           opacity: somethingFocused && !isFocused ? 0.2 : 1,
           filter: somethingFocused && !isFocused ? 'blur(6px)' : 'blur(0px)',
+          scale: somethingFocused && !isFocused ? 0.97 : 1,
         }}
         transition={{ duration: 0.3 }}
       >

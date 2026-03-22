@@ -2,6 +2,10 @@ import { useCallback } from 'react';
 import { motion, useMotionValue, useSpring, useTransform, useMotionTemplate } from 'motion/react';
 import TessellatedPattern from './TessellatedPattern';
 
+const canHover = typeof window !== 'undefined'
+  ? window.matchMedia('(hover: hover) and (pointer: fine)').matches
+  : false;
+
 export default function WishCard({ wish }) {
   const tiltX = useMotionValue(0);
   const tiltY = useMotionValue(0);
@@ -12,6 +16,7 @@ export default function WishCard({ wish }) {
   const shineTransform = useMotionTemplate`translateX(${shineOffset}%)`;
 
   const handleMouseMove = useCallback((e) => {
+    if (!canHover) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width - 0.5;
     const y = (e.clientY - rect.top) / rect.height - 0.5;
@@ -27,26 +32,27 @@ export default function WishCard({ wish }) {
   return (
     <div style={{ perspective: '800px' }}>
       <motion.div
-        className="w-[280px] max-w-[calc(100vw-80px)] bg-[#f5f0eb] rounded shadow-md relative flex group/wish"
+        className="w-[280px] max-w-[calc(100vw-80px)] bg-[#f5f0eb] rounded-lg shadow-md hover:shadow-xl transition-shadow duration-200 relative flex group/wish"
         style={{
           minHeight: '160px',
           rotateX: springX,
           rotateY: springY,
           transformStyle: 'preserve-3d',
         }}
+        whileTap={{ scale: 0.98 }}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       >
         {/* Left side — message */}
         <div className="w-[60%] min-w-0 p-4 flex flex-col justify-between overflow-hidden">
           <p
-            className="text-[18px] text-stone-600 leading-none flex-1 break-words overflow-hidden"
+            className="text-[18px] text-stone-600 leading-snug flex-1 break-words overflow-hidden"
             style={{ fontFamily: 'Caveat, Georgia, "Times New Roman", serif' }}
           >
             {wish.message}
           </p>
           <div className="mt-3 pt-2 border-t border-stone-200/60 shrink-0">
-            <span className="text-[8px] font-mono uppercase tracking-[0.15em] text-stone-400">
+            <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-stone-400">
               — {wish.name}
             </span>
           </div>
@@ -55,7 +61,7 @@ export default function WishCard({ wish }) {
         {/* Right side — pattern */}
         {wish.patternSeed && (
           <div className="w-[40%] flex flex-col">
-            <div className="flex-1 p-2">
+            <div className="flex-1 p-3">
               <div className="w-full h-full rounded overflow-hidden">
                 <TessellatedPattern
                   seed={wish.patternSeed}
@@ -73,7 +79,7 @@ export default function WishCard({ wish }) {
         <div className="pointer-events-none absolute inset-0 overflow-hidden rounded">
           <motion.div
             aria-hidden
-            className="absolute inset-0 opacity-0 transition-opacity duration-500 group-hover/wish:opacity-100"
+            className="absolute inset-0 opacity-0 transition-opacity duration-200 group-hover/wish:opacity-100"
             style={{
               mixBlendMode: 'soft-light',
               maskImage: 'linear-gradient(90deg, transparent 0%, rgba(0,0,0,1) 20%, rgba(0,0,0,1) 80%, transparent 100%)',

@@ -1,11 +1,11 @@
 import { useState, useCallback, useEffect } from 'react';
-import { motion, useSpring, useTransform, useMotionValue, useMotionTemplate, useAnimationControls, AnimatePresence } from 'motion/react';
+import { motion, useSpring, useTransform, useMotionValue, useMotionTemplate, useAnimationControls, useReducedMotion, AnimatePresence } from 'motion/react';
 
-import TessellatedPattern, { modeFromSeed } from './TessellatedPattern';
+import TessellatedPattern, { modeFromSeed, PATTERN_MODES } from './TessellatedPattern';
 import WishCard from './WishCard';
 
 // The card content
-function CardContent({ name, setName, message, setMessage, onCancel, onSubmit, interactive, patternSeed, isMobile }) {
+function CardContent({ name, setName, message, setMessage, onCancel, onSubmit, interactive, patternSeed, patternMode, patternOverrides, isMobile }) {
   const tiltX = useMotionValue(0);
   const tiltY = useMotionValue(0);
   const springX = useSpring(tiltX, { stiffness: 400, damping: 30 });
@@ -69,7 +69,7 @@ function CardContent({ name, setName, message, setMessage, onCancel, onSubmit, i
       <div className="w-[40%] flex flex-col">
         <div className="flex-1 p-4">
           <div className="w-full h-full rounded overflow-hidden">
-            <TessellatedPattern seed={patternSeed} />
+            <TessellatedPattern seed={patternSeed} mode={patternMode} overrides={patternOverrides} />
           </div>
         </div>
 
@@ -100,15 +100,17 @@ function ThrowableCard({ wish, onThrown, shakeTrigger, onThrowProgress, isMobile
   const controls = useAnimationControls();
   const [thrown, setThrown] = useState(false);
   const y = useMotionValue(0);
-
+  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     controls.start({
-      scale: isMobile ? 1.2 : 1.8,
+      scale: 1,
       opacity: 1,
-      transition: { type: 'spring', stiffness: 300, damping: 25 },
+      transition: prefersReducedMotion
+        ? { duration: 0.2 }
+        : { type: 'spring', stiffness: 300, damping: 25 },
     });
-  }, [controls]);
+  }, [controls, prefersReducedMotion]);
 
   // Track y position and report progress (0 = resting, 1 = top of viewport)
   useEffect(() => {
@@ -121,24 +123,23 @@ function ThrowableCard({ wish, onThrown, shakeTrigger, onThrowProgress, isMobile
 
   // Springy up-down shake when backdrop is clicked
   useEffect(() => {
-    if (shakeTrigger > 0 && !thrown) {
+    if (shakeTrigger > 0 && !thrown && !prefersReducedMotion) {
       controls.start({
-        y: [0, -30, 15, -8, 4, 0],
-        transition: { duration: 0.6, ease: 'easeOut' },
+        y: [-20, 0],
+        transition: { type: 'spring', stiffness: 500, damping: 15 },
       });
     }
-  }, [shakeTrigger, controls, thrown]);
+  }, [shakeTrigger, controls, thrown, prefersReducedMotion]);
 
   const handleDragEnd = (event, info) => {
     if (thrown) return;
     if (info.velocity.y < -200) {
       setThrown(true);
-      controls.start({
-        y: -window.innerHeight - 200,
-        opacity: 0,
-        scale: 0.6,
-        transition: { duration: 0.5, ease: [0.4, 0, 1, 1] },
-      }).then(onThrown);
+      controls.start(
+        prefersReducedMotion
+          ? { opacity: 0, transition: { duration: 0.2 } }
+          : { y: -window.innerHeight - 200, opacity: 0, scale: 0.6, transition: { duration: 0.35, ease: [0.4, 0, 1, 1] } }
+      ).then(onThrown);
     } else {
       controls.start({
         x: 0,
@@ -152,9 +153,9 @@ function ThrowableCard({ wish, onThrown, shakeTrigger, onThrowProgress, isMobile
     <div className="flex flex-col items-center" style={{ gap: isMobile ? '40px' : '80px' }}>
       <motion.div
         drag
-        dragElastic={0.6}
+        dragElastic={0.15}
         animate={controls}
-        initial={{ scale: isMobile ? 1.5 : 2, opacity: 0 }}
+        initial={{ scale: 0.95, opacity: 0 }}
         onDragEnd={handleDragEnd}
         className="cursor-grab active:cursor-grabbing"
         style={{ touchAction: 'none', y }}
@@ -165,7 +166,7 @@ function ThrowableCard({ wish, onThrown, shakeTrigger, onThrowProgress, isMobile
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.4 }}
+          transition={{ delay: 0.35, duration: 0.3 }}
           className="flex flex-col items-center gap-3"
         >
           <p className="text-gray-600 text-sm font-mono uppercase tracking-[0.2em] bg-white/80 px-4 py-2 rounded-full shadow-sm">
@@ -186,13 +187,39 @@ export default function WishModal({ isOpen, onToggle, onSubmit, onThrowProgress,
   const [preparedWish, setPreparedWish] = useState(null);
   const [shakeTrigger, setShakeTrigger] = useState(0);
 
+  const patternMode = 'truchet';
+  const patternOverrides = {
+    gridSize: 6,
+    density: 3,
+    lineWeight: 1,
+    marginPct: 0.05,
+    lineCap: 1,
+    strokeColor: '#D4944A',
+    accentColor: '#E8B84B',
+    highlightColor: '#F6DFA4',
+    bgColor: '#1a1714',
+    primaryAlpha: 1,
+    secondaryAlpha: 0.85,
+    alphaFalloff: 0.6,
+    primaryWeight: 0.55,
+    accentWeight: 0.25,
+    rotationJitter: 0,
+    arcSpread: 0.3,
+    diagSpread: 0.45,
+    shapeScale: 1.1,
+    crossSpread: 0.35,
+    crossLength: 0.55,
+    crossAngleJitter: 0.75,
+    secondaryWeightRatio: 0.1,
+  };
+
   const handleSubmit = () => {
     if (!message.trim()) return;
     const wish = {
       name: name.trim() || 'Anonymous',
       message: message.trim(),
       patternSeed,
-      patternMode: modeFromSeed(patternSeed),
+      patternMode: patternMode,
     };
     setPreparedWish(wish);
     setPhase('morphed');
@@ -270,9 +297,9 @@ export default function WishModal({ isOpen, onToggle, onSubmit, onThrowProgress,
                   key="editing"
                   className="relative z-10 w-full max-w-[560px] px-4"
                   style={{ perspective: '1200px' }}
-                  initial={{ opacity: 0, scale: 0.5, y: 300, filter: 'blur(8px)' }}
+                  initial={{ opacity: 0, scale: 0.9, y: 40, filter: 'blur(8px)' }}
                   animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
-                  exit={{ opacity: 0, scale: 0.5, y: 300, filter: 'blur(8px)' }}
+                  exit={{ opacity: 0, scale: 0.95, y: -80, filter: 'blur(8px)' }}
                   transition={{
                     type: 'spring',
                     stiffness: 300,
@@ -289,6 +316,8 @@ export default function WishModal({ isOpen, onToggle, onSubmit, onThrowProgress,
                     onSubmit={handleSubmit}
                     interactive={true}
                     patternSeed={patternSeed}
+                    patternMode={patternMode}
+                    patternOverrides={patternOverrides}
                     isMobile={isMobile}
                   />
                   <button
