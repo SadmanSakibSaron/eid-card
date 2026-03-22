@@ -1,16 +1,39 @@
-# React + Vite
+# Eid Mubarak - Interactive Wish Card
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+An interactive Eid greeting card app built with React, Vite, and Framer Motion. Users can write wishes on postcards with procedurally generated tessellated patterns, then flick them into the world.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Draggable wish cards with tilt/shine effects
+- Procedurally generated Islamic geometric patterns (seeded PRNG)
+- Flick-to-send gesture with spring physics
+- Responsive layout with mobile support
 
-## React Compiler
+## Patterns
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The tessellated card patterns include:
 
-## Expanding the ESLint configuration
+- **Truchet** - Quarter-arc tile compositions
+- **Diagonal** - Crossed diagonal line fields
+- **Concentric** - Nested geometric shapes (circles, squares, diamonds)
+- **Crosshatch** - Overlapping hatch line grids
+- **8-Zohreh** - 8-pointed star rosette with interlace and inner octagon
+- **8-Sili** - Star-and-bracelet interlocking pattern with kite petals and weave crossings
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+The 8-Zohreh and 8-Sili patterns are based on the classification and construction methods described in:
+
+> Kaplan, C.S. (2000). **Computer Generated Islamic Star Patterns.** In: *Bridges 2000: Mathematical Connections in Art, Music, and Science.* Springer. [https://link.springer.com/chapter/10.1007/978-3-540-89796-5_91](https://link.springer.com/chapter/10.1007/978-3-540-89796-5_91)
+
+## Setup
+
+```bash
+npm install
+npm run dev
+```
+
+## Tech Stack
+
+- React + Vite
+- Framer Motion
+- Tailwind CSS
+- Canvas 2D for pattern rendering

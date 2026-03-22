@@ -18,7 +18,12 @@ function hexToRgba(hex, alpha = 1) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-const MODES = ['truchet', 'diagonal', 'concentric'];
+function hexToRgb(hex) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)] : [0, 0, 0];
+}
+
+const MODES = ['truchet', 'diagonal', 'concentric', 'zohreh', 'sili'];
 
 function drawTruchet(ctx, rng, ox, oy, cols, rows, cw, ch, lw, density, p) {
   const colors = [p.strokeColor, p.accentColor, p.highlightColor];
@@ -185,7 +190,324 @@ function drawCrosshatch(ctx, rng, ox, oy, cols, rows, cw, ch, lw, density, p) {
   }
 }
 
-const drawFns = { truchet: drawTruchet, diagonal: drawDiagonal, concentric: drawConcentric, cross: drawCrosshatch };
+// ═══════════════════════════════════════════════════════════
+// 8-ZOHREH: 8-pointed star rosette pattern
+// ═══════════════════════════════════════════════════════════
+
+function drawZohreh(ctx, rng, ox, oy, cols, rows, cw, ch, lw, density, p) {
+  const c1 = hexToRgb(p.strokeColor);
+  const c2 = hexToRgb(p.accentColor);
+  const c3 = hexToRgb(p.highlightColor);
+  const inset = 0.30;
+  const iw = 2.5;
+  const PI = Math.PI;
+
+  for (let gi = 0; gi < cols; gi++) {
+    for (let gj = 0; gj < rows; gj++) {
+      const cx = ox + gi * cw + cw / 2;
+      const cy = oy + gj * ch + ch / 2;
+      const R = Math.min(cw, ch) / 2 * 0.95;
+
+      // Star outer + dimple (inner) points
+      const starOuter = [];
+      const starInner = [];
+      const innerR = R * (1 - inset);
+
+      for (let k = 0; k < 8; k++) {
+        const angle = k * PI / 4 - PI / 8;
+        starOuter.push({ x: cx + R * Math.cos(angle), y: cy + R * Math.sin(angle) });
+        const midAngle = angle + PI / 8;
+        starInner.push({ x: cx + innerR * Math.cos(midAngle), y: cy + innerR * Math.sin(midAngle) });
+      }
+
+      // 8-pointed star polygon
+      ctx.strokeStyle = `rgb(${c1[0]},${c1[1]},${c1[2]})`;
+      ctx.lineWidth = lw;
+      ctx.beginPath();
+      for (let k = 0; k < 8; k++) {
+        const fn = k === 0 ? 'moveTo' : 'lineTo';
+        ctx[fn](starOuter[k].x, starOuter[k].y);
+        ctx.lineTo(starInner[k].x, starInner[k].y);
+      }
+      ctx.closePath();
+      ctx.stroke();
+
+      // Inner octagonal rosette
+      const innerOctR = R * 0.45;
+      ctx.strokeStyle = `rgb(${c2[0]},${c2[1]},${c2[2]})`;
+      ctx.lineWidth = lw * 0.8;
+      ctx.beginPath();
+      for (let k = 0; k < 8; k++) {
+        const angle = k * PI / 4 - PI / 8;
+        const fn = k === 0 ? 'moveTo' : 'lineTo';
+        ctx[fn](cx + innerOctR * Math.cos(angle), cy + innerOctR * Math.sin(angle));
+      }
+      ctx.closePath();
+      ctx.stroke();
+
+      // Radial lines — inner octagon to star points
+      ctx.strokeStyle = `rgba(${c3[0]},${c3[1]},${c3[2]},0.7)`;
+      ctx.lineWidth = lw * 0.6;
+      for (let k = 0; k < 8; k++) {
+        const angle = k * PI / 4 - PI / 8;
+        const ix = cx + innerOctR * Math.cos(angle);
+        const iy = cy + innerOctR * Math.sin(angle);
+        ctx.beginPath();
+        ctx.moveTo(ix, iy);
+        ctx.lineTo(starOuter[k].x, starOuter[k].y);
+        ctx.stroke();
+      }
+
+      // Connect adjacent dimples (rosette flanks)
+      ctx.strokeStyle = `rgba(${c2[0]},${c2[1]},${c2[2]},0.78)`;
+      ctx.lineWidth = lw * 0.7;
+      for (let k = 0; k < 8; k++) {
+        const next = (k + 1) % 8;
+        ctx.beginPath();
+        ctx.moveTo(starInner[k].x, starInner[k].y);
+        ctx.lineTo(starInner[next].x, starInner[next].y);
+        ctx.stroke();
+      }
+
+      // Interlace: diagonal lines through center
+      if (iw > 0) {
+        ctx.strokeStyle = `rgb(${c1[0]},${c1[1]},${c1[2]})`;
+        ctx.lineWidth = iw;
+        for (let k = 0; k < 4; k++) {
+          const a = starInner[k];
+          const b = starInner[(k + 4) % 8];
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+        }
+      }
+
+      // Cross shapes in square gaps between stars
+      if (gi < cols - 1 && gj < rows - 1) {
+        const cornerX = ox + (gi + 1) * cw;
+        const cornerY = oy + (gj + 1) * ch;
+        const crossR = Math.min(cw, ch) * 0.15;
+
+        ctx.strokeStyle = `rgb(${c3[0]},${c3[1]},${c3[2]})`;
+        ctx.lineWidth = lw * 0.7;
+        ctx.beginPath();
+        for (let k = 0; k < 4; k++) {
+          const a1 = k * PI / 2;
+          const a2 = a1 + PI / 4;
+          const fn = k === 0 ? 'moveTo' : 'lineTo';
+          ctx[fn](cornerX + crossR * Math.cos(a1), cornerY + crossR * Math.sin(a1));
+          ctx.lineTo(cornerX + crossR * 0.4 * Math.cos(a2), cornerY + crossR * 0.4 * Math.sin(a2));
+        }
+        ctx.closePath();
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Border frame
+  ctx.strokeStyle = `rgba(${c1[0]},${c1[1]},${c1[2]},0.39)`;
+  ctx.lineWidth = lw * 0.5;
+  ctx.strokeRect(ox - 5, oy - 5, cols * cw + 10, rows * ch + 10);
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// 8-SILI: Star-and-bracelet interlocking pattern
+// ═══════════════════════════════════════════════════════════
+
+function drawSili(ctx, rng, ox, oy, cols, rows, cw, ch, lw, density, p) {
+  const c1 = hexToRgb(p.strokeColor);
+  const c2 = hexToRgb(p.accentColor);
+  const c3 = hexToRgb(p.highlightColor);
+  const bgC = hexToRgb(p.bgColor);
+  const inset = 0.30;
+  const iw = 2.5;
+  const PI = Math.PI;
+
+  for (let gi = 0; gi < cols; gi++) {
+    for (let gj = 0; gj < rows; gj++) {
+      const cx = ox + gi * cw + cw / 2;
+      const cy = oy + gj * ch + ch / 2;
+      const R = Math.min(cw, ch) / 2 * 0.95;
+
+      // Octagon vertices (0° start)
+      const octVerts = [];
+      for (let k = 0; k < 8; k++) {
+        const angle = k * PI / 4;
+        octVerts.push({ x: cx + R * Math.cos(angle), y: cy + R * Math.sin(angle) });
+      }
+
+      // Octagon outline (construction guide)
+      ctx.strokeStyle = `rgba(${c2[0]},${c2[1]},${c2[2]},0.31)`;
+      ctx.lineWidth = lw * 0.4;
+      ctx.beginPath();
+      for (let k = 0; k < 8; k++) {
+        const fn = k === 0 ? 'moveTo' : 'lineTo';
+        ctx[fn](octVerts[k].x, octVerts[k].y);
+      }
+      ctx.closePath();
+      ctx.stroke();
+
+      // Star points + dimple points
+      const starPts = [];
+      const dimplePts = [];
+      const dimpleR = R * (1 - inset * 1.2);
+
+      for (let k = 0; k < 8; k++) {
+        const angle = k * PI / 4;
+        starPts.push({ x: cx + R * Math.cos(angle), y: cy + R * Math.sin(angle) });
+        const midAngle = angle + PI / 8;
+        dimplePts.push({ x: cx + dimpleR * Math.cos(midAngle), y: cy + dimpleR * Math.sin(midAngle) });
+      }
+
+      // Main 8-pointed star
+      ctx.strokeStyle = `rgb(${c1[0]},${c1[1]},${c1[2]})`;
+      ctx.lineWidth = lw;
+      ctx.beginPath();
+      for (let k = 0; k < 8; k++) {
+        const fn = k === 0 ? 'moveTo' : 'lineTo';
+        ctx[fn](starPts[k].x, starPts[k].y);
+        ctx.lineTo(dimplePts[k].x, dimplePts[k].y);
+      }
+      ctx.closePath();
+      ctx.stroke();
+
+      // Sili petals (bracelet kite shapes)
+      for (let k = 0; k < 8; k++) {
+        const next = (k + 1) % 8;
+        const dp = dimplePts[k];
+        const sp1 = starPts[k];
+        const sp2 = starPts[next];
+
+        const edgeMidX = (sp1.x + sp2.x) / 2;
+        const edgeMidY = (sp1.y + sp2.y) / 2;
+        const outX = edgeMidX + (edgeMidX - cx) * inset * 0.6;
+        const outY = edgeMidY + (edgeMidY - cy) * inset * 0.6;
+
+        // Dimple → petal tip
+        ctx.strokeStyle = `rgb(${c2[0]},${c2[1]},${c2[2]})`;
+        ctx.lineWidth = lw * 0.85;
+        ctx.beginPath();
+        ctx.moveTo(dp.x, dp.y);
+        ctx.lineTo(outX, outY);
+        ctx.stroke();
+
+        // Petal tip → flanking star points
+        ctx.strokeStyle = `rgba(${c3[0]},${c3[1]},${c3[2]},0.63)`;
+        ctx.lineWidth = lw * 0.55;
+        ctx.beginPath();
+        ctx.moveTo(outX, outY);
+        ctx.lineTo(sp1.x, sp1.y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(outX, outY);
+        ctx.lineTo(sp2.x, sp2.y);
+        ctx.stroke();
+      }
+
+      // Inner star (rotated 22.5°)
+      const innerR2 = R * 0.38;
+      const innerDimpleR2 = innerR2 * (1 - inset * 0.8);
+      ctx.strokeStyle = `rgba(${c3[0]},${c3[1]},${c3[2]},0.78)`;
+      ctx.lineWidth = lw * 0.6;
+      ctx.beginPath();
+      for (let k = 0; k < 8; k++) {
+        const angle = k * PI / 4 + PI / 8;
+        const fn = k === 0 ? 'moveTo' : 'lineTo';
+        ctx[fn](cx + innerR2 * Math.cos(angle), cy + innerR2 * Math.sin(angle));
+        const midAngle = angle + PI / 8;
+        ctx.lineTo(cx + innerDimpleR2 * Math.cos(midAngle), cy + innerDimpleR2 * Math.sin(midAngle));
+      }
+      ctx.closePath();
+      ctx.stroke();
+
+      // Radial connectors — inner star to outer dimples
+      ctx.strokeStyle = `rgba(${c1[0]},${c1[1]},${c1[2]},0.47)`;
+      ctx.lineWidth = lw * 0.5;
+      for (let k = 0; k < 8; k++) {
+        const innerAngle = k * PI / 4 + PI / 8;
+        const ix = cx + innerR2 * Math.cos(innerAngle);
+        const iy = cy + innerR2 * Math.sin(innerAngle);
+        ctx.beginPath();
+        ctx.moveTo(ix, iy);
+        ctx.lineTo(dimplePts[k].x, dimplePts[k].y);
+        ctx.stroke();
+      }
+
+      // Interlace weave at crossings
+      if (iw > 0) {
+        for (let k = 0; k < 4; k++) {
+          const a = starPts[k];
+          const b = starPts[(k + 4) % 8];
+          const midX = (a.x + b.x) / 2;
+          const midY = (a.y + b.y) / 2;
+          const dx = (b.x - a.x) * 0.08;
+          const dy = (b.y - a.y) * 0.08;
+
+          // Background break
+          ctx.strokeStyle = `rgb(${bgC[0]},${bgC[1]},${bgC[2]})`;
+          ctx.lineWidth = iw + 2;
+          ctx.beginPath();
+          ctx.moveTo(midX - dx, midY - dy);
+          ctx.lineTo(midX + dx, midY + dy);
+          ctx.stroke();
+
+          // Perpendicular crossing line
+          ctx.strokeStyle = `rgb(${c1[0]},${c1[1]},${c1[2]})`;
+          ctx.lineWidth = lw * 0.9;
+          const perpAngle = Math.atan2(b.y - a.y, b.x - a.x) + PI / 2;
+          const crossLen = iw * 2;
+          ctx.beginPath();
+          ctx.moveTo(midX - Math.cos(perpAngle) * crossLen, midY - Math.sin(perpAngle) * crossLen);
+          ctx.lineTo(midX + Math.cos(perpAngle) * crossLen, midY + Math.sin(perpAngle) * crossLen);
+          ctx.stroke();
+        }
+      }
+
+      // Cross motif in square gaps
+      if (gi < cols - 1 && gj < rows - 1) {
+        const cornerX = ox + (gi + 1) * cw;
+        const cornerY = oy + (gj + 1) * ch;
+        const crossR = Math.min(cw, ch) * 0.2;
+        const crossInner = crossR * 0.35;
+
+        ctx.strokeStyle = `rgb(${c1[0]},${c1[1]},${c1[2]})`;
+        ctx.lineWidth = lw * 0.8;
+        ctx.beginPath();
+        for (let k = 0; k < 4; k++) {
+          const a1 = k * PI / 2 - PI / 4;
+          const a2 = a1 + PI / 8;
+          const fn = k === 0 ? 'moveTo' : 'lineTo';
+          ctx[fn](cornerX + crossR * Math.cos(a1), cornerY + crossR * Math.sin(a1));
+          ctx.lineTo(cornerX + crossInner * Math.cos(a2), cornerY + crossInner * Math.sin(a2));
+        }
+        ctx.closePath();
+        ctx.stroke();
+
+        // Inner diamond
+        ctx.strokeStyle = `rgba(${c2[0]},${c2[1]},${c2[2]},0.63)`;
+        ctx.lineWidth = lw * 0.5;
+        const dR = crossInner * 1.2;
+        ctx.beginPath();
+        for (let k = 0; k < 4; k++) {
+          const a = k * PI / 2;
+          const fn = k === 0 ? 'moveTo' : 'lineTo';
+          ctx[fn](cornerX + dR * Math.cos(a), cornerY + dR * Math.sin(a));
+        }
+        ctx.closePath();
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Border
+  ctx.strokeStyle = `rgba(${c1[0]},${c1[1]},${c1[2]},0.39)`;
+  ctx.lineWidth = lw * 0.5;
+  ctx.strokeRect(ox - 5, oy - 5, cols * cw + 10, rows * ch + 10);
+}
+
+const drawFns = { truchet: drawTruchet, diagonal: drawDiagonal, concentric: drawConcentric, cross: drawCrosshatch, zohreh: drawZohreh, sili: drawSili };
 
 function shuffleColors(rng, p) {
   const allColors = [p.bgColor, p.strokeColor, p.accentColor, p.highlightColor];
