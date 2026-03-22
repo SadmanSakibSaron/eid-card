@@ -1,10 +1,11 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion, useSpring, useTransform, useMotionValue, useMotionTemplate, useAnimationControls, AnimatePresence } from 'motion/react';
+
 import TessellatedPattern, { modeFromSeed } from './TessellatedPattern';
 import WishCard from './WishCard';
 
 // The card content
-function CardContent({ name, setName, message, setMessage, onCancel, onSubmit, interactive, patternSeed }) {
+function CardContent({ name, setName, message, setMessage, onCancel, onSubmit, interactive, patternSeed, isMobile }) {
   const tiltX = useMotionValue(0);
   const tiltY = useMotionValue(0);
   const springX = useSpring(tiltX, { stiffness: 400, damping: 30 });
@@ -29,7 +30,7 @@ function CardContent({ name, setName, message, setMessage, onCancel, onSubmit, i
 
   return (
     <motion.div
-      className="w-[560px] bg-[#f5f0eb] rounded shadow-2xl relative flex group/card"
+      className="w-full max-w-[560px] bg-[#f5f0eb] rounded shadow-2xl relative flex group/card"
       style={{
         minHeight: '320px',
         rotateX: springX,
@@ -95,14 +96,15 @@ function CardContent({ name, setName, message, setMessage, onCancel, onSubmit, i
   );
 }
 
-function ThrowableCard({ wish, onThrown, shakeTrigger, onThrowProgress }) {
+function ThrowableCard({ wish, onThrown, shakeTrigger, onThrowProgress, isMobile }) {
   const controls = useAnimationControls();
   const [thrown, setThrown] = useState(false);
   const y = useMotionValue(0);
 
+
   useEffect(() => {
     controls.start({
-      scale: 1.8,
+      scale: isMobile ? 1.2 : 1.8,
       opacity: 1,
       transition: { type: 'spring', stiffness: 300, damping: 25 },
     });
@@ -147,12 +149,12 @@ function ThrowableCard({ wish, onThrown, shakeTrigger, onThrowProgress }) {
   };
 
   return (
-    <div className="flex flex-col items-center" style={{ gap: '80px' }}>
+    <div className="flex flex-col items-center" style={{ gap: isMobile ? '40px' : '80px' }}>
       <motion.div
         drag
         dragElastic={0.6}
         animate={controls}
-        initial={{ scale: 2, opacity: 0 }}
+        initial={{ scale: isMobile ? 1.5 : 2, opacity: 0 }}
         onDragEnd={handleDragEnd}
         className="cursor-grab active:cursor-grabbing"
         style={{ touchAction: 'none', y }}
@@ -160,20 +162,23 @@ function ThrowableCard({ wish, onThrown, shakeTrigger, onThrowProgress }) {
         <WishCard wish={wish} />
       </motion.div>
       {!thrown && (
-        <motion.p
+        <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.4 }}
-          className="text-gray-600 text-sm font-mono uppercase tracking-[0.2em] bg-white/80 px-4 py-2 rounded-full shadow-sm"
+          className="flex flex-col items-center gap-3"
         >
-          Flick upward to send
-        </motion.p>
+          <p className="text-gray-600 text-sm font-mono uppercase tracking-[0.2em] bg-white/80 px-4 py-2 rounded-full shadow-sm">
+            Flick upward to send
+          </p>
+        </motion.div>
       )}
+
     </div>
   );
 }
 
-export default function WishModal({ isOpen, onToggle, onSubmit, onThrowProgress }) {
+export default function WishModal({ isOpen, onToggle, onSubmit, onThrowProgress, isMobile }) {
   const [name, setName] = useState('');
   const [message, setMessage] = useState('');
   const [patternSeed, setPatternSeed] = useState(() => Math.floor(Math.random() * 999999) + 1);
@@ -243,7 +248,11 @@ export default function WishModal({ isOpen, onToggle, onSubmit, onThrowProgress 
       {/* Modal */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div className="absolute inset-0 z-[105] flex items-center justify-center">
+          <motion.div
+            className="absolute inset-0 z-[105] flex items-center justify-center"
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
             {/* Backdrop */}
             <motion.div
               className="absolute inset-0 bg-white/10 backdrop-blur-sm"
@@ -259,11 +268,11 @@ export default function WishModal({ isOpen, onToggle, onSubmit, onThrowProgress 
               {phase === 'editing' ? (
                 <motion.div
                   key="editing"
-                  className="relative z-10"
+                  className="relative z-10 w-full max-w-[560px] px-4"
                   style={{ perspective: '1200px' }}
                   initial={{ opacity: 0, scale: 0.5, y: 300, filter: 'blur(8px)' }}
                   animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
-                  exit={{ opacity: 0, scale: 0.8, filter: 'blur(4px)' }}
+                  exit={{ opacity: 0, scale: 0.5, y: 300, filter: 'blur(8px)' }}
                   transition={{
                     type: 'spring',
                     stiffness: 300,
@@ -280,11 +289,12 @@ export default function WishModal({ isOpen, onToggle, onSubmit, onThrowProgress 
                     onSubmit={handleSubmit}
                     interactive={true}
                     patternSeed={patternSeed}
+                    isMobile={isMobile}
                   />
                   <button
                     onClick={handleSubmit}
                     disabled={!message.trim()}
-                    className="w-[560px] mt-6 py-4 text-sm font-mono uppercase tracking-[0.2em] text-white bg-[#D4944A] rounded-full hover:brightness-110 transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer shadow-lg"
+                    className="w-full mt-6 py-4 text-sm font-mono uppercase tracking-[0.2em] text-white bg-[#D4944A] rounded-full hover:brightness-110 transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer shadow-lg"
                   >
                     Send Wish
                   </button>
@@ -298,7 +308,7 @@ export default function WishModal({ isOpen, onToggle, onSubmit, onThrowProgress 
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <ThrowableCard wish={preparedWish} onThrown={handleThrowComplete} shakeTrigger={shakeTrigger} onThrowProgress={onThrowProgress} />
+                  <ThrowableCard wish={preparedWish} onThrown={handleThrowComplete} shakeTrigger={shakeTrigger} onThrowProgress={onThrowProgress} isMobile={isMobile} />
                 </motion.div>
               )}
             </AnimatePresence>

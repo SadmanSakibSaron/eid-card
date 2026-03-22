@@ -27,7 +27,7 @@ export default function WishCard({ wish }) {
   return (
     <div style={{ perspective: '800px' }}>
       <motion.div
-        className="w-[280px] bg-[#f5f0eb] rounded shadow-md relative flex group/wish"
+        className="w-[280px] max-w-[calc(100vw-80px)] bg-[#f5f0eb] rounded shadow-md relative flex group/wish"
         style={{
           minHeight: '160px',
           rotateX: springX,

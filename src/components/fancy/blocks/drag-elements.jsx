@@ -17,6 +17,7 @@ function DragChild({
   dragMomentum,
   dragTransition,
   dragPropagation,
+  isMobile,
 }) {
   const controls = useAnimationControls();
   const ref = useRef(null);
@@ -34,10 +35,8 @@ function DragChild({
     if (!el) return;
 
     const elRect = el.getBoundingClientRect();
-    const container = constraintsRef?.current;
-    const containerRect = container ? container.getBoundingClientRect() : { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
-    const cx = containerRect.left + containerRect.width / 2;
-    const cy = containerRect.top + containerRect.height / 2;
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
 
     beforeFocusRef.current = true;
 
@@ -48,10 +47,10 @@ function DragChild({
       x: offsetX,
       y: offsetY,
       rotate: 0,
-      scale: 2,
+      scale: isMobile ? 1.3 : 2,
       transition: { type: 'spring', stiffness: 500, damping: 80 },
     });
-  }, [controls]);
+  }, [controls, isMobile]);
 
   const animateBack = useCallback(() => {
     controls.start({
@@ -105,8 +104,8 @@ function DragChild({
         rotate: baseRotate,
         transition: {
           type: 'spring',
-          stiffness: 150,
-          damping: 20,
+          stiffness: 80,
+          damping: 18,
           mass: 0.8,
           delay: 0.1,
         },
@@ -167,6 +166,7 @@ function DragChild({
       style={{
         zIndex: isFocused ? 9999 : zIndex,
         cursor: isDragging ? "grabbing" : "grab",
+        touchAction: 'none',
         ...child.props.style,
       }}
       onPointerDown={handlePointerDown}
@@ -197,6 +197,7 @@ const DragElements = ({
   dragPropagation = true,
   selectedOnTop = true,
   onFocusChange,
+  isMobile,
   className,
 }) => {
   const constraintsRef = useRef(null)
@@ -266,6 +267,7 @@ const DragElements = ({
           dragMomentum={dragMomentum}
           dragTransition={dragTransition}
           dragPropagation={dragPropagation}
+          isMobile={isMobile}
         />
       ))}
     </div>

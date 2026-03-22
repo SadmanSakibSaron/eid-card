@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(gh api:*)",
+      "Bash(curl:*)",
+      "Bash(npx vite:*)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(find D:BMADTestsEidnode_modulesframer-motion -name *.d.ts -type f)",
+      "WebSearch"
+    ]
+  }
+}
